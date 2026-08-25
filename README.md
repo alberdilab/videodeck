@@ -9,11 +9,20 @@ The first target camera is the Nivian NVS-IPC-IS4 Tuya/SmartLife-compatible indo
 <!-- BEGIN DOWNLOADS -->
 ## Download
 
-No release has been archived yet. Once the first release is published, this
-section is regenerated automatically from the Zenodo record and lists installers
-for macOS (x64, arm64), Windows (x64), and Linux (x64, arm64).
+Pre-built installers for **v0.1.0** are archived on Zenodo
+([DOI 10.5281/zenodo.22091745](https://doi.org/10.5281/zenodo.22091745)). Pick the build for your
+platform; the right-hand column lists alternative formats.
 
-Until then, build from source with the instructions below, or check the
+| Platform | Architecture | Installer | Other formats |
+| --- | --- | --- | --- |
+| macOS | Apple Silicon (arm64) | [`.dmg`](https://zenodo.org/records/22091745/files/videodeck_0.1.0_arm64_mac.dmg?download=1) | [`.zip`](https://zenodo.org/records/22091745/files/videodeck_0.1.0_arm64_mac.zip?download=1) |
+| macOS | Intel (x64) | [`.dmg`](https://zenodo.org/records/22091745/files/videodeck_0.1.0_x64_mac.dmg?download=1) | [`.zip`](https://zenodo.org/records/22091745/files/videodeck_0.1.0_x64_mac.zip?download=1) |
+| Windows | x64 | [`.exe`](https://zenodo.org/records/22091745/files/videodeck_0.1.0_x64_win.exe?download=1) | [`.zip`](https://zenodo.org/records/22091745/files/videodeck_0.1.0_x64_win.zip?download=1) |
+| Linux | x64 (x86_64) | [`.AppImage`](https://zenodo.org/records/22091745/files/videodeck_0.1.0_x86_64_linux.AppImage?download=1) | [`.deb`](https://zenodo.org/records/22091745/files/videodeck_0.1.0_amd64_linux.deb?download=1) · [`.rpm`](https://zenodo.org/records/22091745/files/videodeck_0.1.0_x86_64_linux.rpm?download=1) · [`.tar.gz`](https://zenodo.org/records/22091745/files/videodeck_0.1.0_x64_linux.tar.gz?download=1) |
+| Linux | arm64 (aarch64) | [`.AppImage`](https://zenodo.org/records/22091745/files/videodeck_0.1.0_arm64_linux.AppImage?download=1) | [`.deb`](https://zenodo.org/records/22091745/files/videodeck_0.1.0_arm64_linux.deb?download=1) · [`.rpm`](https://zenodo.org/records/22091745/files/videodeck_0.1.0_aarch64_linux.rpm?download=1) · [`.tar.gz`](https://zenodo.org/records/22091745/files/videodeck_0.1.0_arm64_linux.tar.gz?download=1) |
+
+Verify downloads against [`SHA256SUMS-0.1.0.txt`](https://zenodo.org/records/22091745/files/SHA256SUMS-0.1.0.txt?download=1).
+For other releases, browse the [all-versions Zenodo record](https://doi.org/10.5281/zenodo.22091744) or the
 [GitHub releases page](https://github.com/alberdilab/videodeck/releases).
 <!-- END DOWNLOADS -->
 
