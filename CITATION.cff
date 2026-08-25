@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use VideoDeck, please cite it using the metadata in this file."
+type: software
+title: "VideoDeck"
+authors:
+  - family-names: "Alberdi"
+    given-names: "Antton"
+repository-code: "https://github.com/alberdilab/videodeck"
+url: "https://github.com/alberdilab/videodeck"
+# After the first Zenodo archive, add the concept DOI here as `doi:` and list
+# both the concept DOI and the per-version DOI under `identifiers:`, following
+# the pattern documented in docs/release-with-zenodo.md.
+abstract: >-
+  VideoDeck is an open-source desktop application for managing local ONVIF/RTSP
+  IP cameras, providing a live-view grid, manual and fixed-duration recordings,
+  interval snapshots, recurrence-based schedules, and locally stored recording
+  metadata.
+keywords:
+  - video recording
+  - IP camera
+  - ONVIF
+  - RTSP
+  - animal behaviour
+  - timelapse
+  - Electron
+license: MIT
+version: 0.1.0
+date-released: 2026-08-25

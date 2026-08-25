@@ -1,0 +1,320 @@
+#!/usr/bin/env node
+
+const fs = require('node:fs');
+const path = require('node:path');
+const crypto = require('node:crypto');
+const { spawnSync } = require('node:child_process');
+
+const ROOT = path.resolve(__dirname, '..');
+
+const usage = () => {
+  console.log(`VideoDeck release builder
+
+Usage:
+  npm run release:build -- --version <x.y.z> [--notes <file>] [--skip-lint] [--skip-build] [--dry-run]
+
+Examples:
+  npm run release:build -- --version 0.1.0 --notes release-notes/0.1.0.md
+  npm run release:build -- --version 0.1.0 --skip-build
+
+Build coverage:
+  Because better-sqlite3 is a native module, a host can only package for its own
+  operating system. macOS hosts build macOS x64/arm64 artifacts, Windows hosts
+  build Windows x64 artifacts, and Linux hosts build Linux x64 artifacts. The
+  complete matrix, including Linux arm64, is produced by the Release workflow.
+`);
+};
+
+const args = process.argv.slice(2);
+const options = {
+  version: '',
+  notes: '',
+  skipLint: false,
+  skipBuild: false,
+  dryRun: false
+};
+
+for (let index = 0; index < args.length; index += 1) {
+  const arg = args[index];
+  if (arg === '--help' || arg === '-h') {
+    usage();
+    process.exit(0);
+  }
+  if (arg === '--version') {
+    options.version = args[index + 1] ?? '';
+    index += 1;
+    continue;
+  }
+  if (arg === '--notes') {
+    options.notes = args[index + 1] ?? '';
+    index += 1;
+    continue;
+  }
+  if (arg === '--skip-lint') {
+    options.skipLint = true;
+    continue;
+  }
+  if (arg === '--skip-build') {
+    options.skipBuild = true;
+    continue;
+  }
+  if (arg === '--dry-run') {
+    options.dryRun = true;
+    continue;
+  }
+  throw new Error(`Unknown option: ${arg}`);
+}
+
+if (!/^\d+\.\d+\.\d+$/.test(options.version)) {
+  throw new Error('Expected --version <x.y.z>, e.g. --version 0.1.0');
+}
+
+const notesRelative = options.notes || path.join('release-notes', `${options.version}.md`);
+const notesPath = path.resolve(ROOT, notesRelative);
+if (!fs.existsSync(notesPath)) {
+  const template = `- Summary of the release
+- Key feature or fix 1
+- Key feature or fix 2
+`;
+  fs.mkdirSync(path.dirname(notesPath), { recursive: true });
+  fs.writeFileSync(notesPath, template, 'utf8');
+  throw new Error(
+    `Release notes file was missing and has been created:\n  ${path.relative(
+      ROOT,
+      notesPath
+    )}\nFill it and run again.`
+  );
+}
+
+const run = (command, commandArgs) => {
+  const rendered = [command, ...commandArgs].join(' ');
+  console.log(`\n> ${rendered}`);
+  if (options.dryRun) {
+    return;
+  }
+  const result = spawnSync(command, commandArgs, {
+    cwd: ROOT,
+    stdio: 'inherit',
+    shell: process.platform === 'win32'
+  });
+  if (result.status !== 0) {
+    throw new Error(`Command failed: ${rendered}`);
+  }
+};
+
+const read = (relativePath) => fs.readFileSync(path.join(ROOT, relativePath), 'utf8');
+const write = (relativePath, content) =>
+  fs.writeFileSync(path.join(ROOT, relativePath), content, 'utf8');
+
+const replaceInFile = (relativePath, replacer) => {
+  const current = read(relativePath);
+  const next = replacer(current);
+  if (next !== current && !options.dryRun) {
+    write(relativePath, next);
+  }
+};
+
+const normalizeNotesBody = (raw) => {
+  const cleaned = raw
+    .split('\n')
+    .filter((line) => !line.trim().startsWith('#'))
+    .join('\n')
+    .trim();
+  if (!cleaned) {
+    throw new Error(`Release notes file is empty: ${path.relative(ROOT, notesPath)}`);
+  }
+  const lines = cleaned.split('\n').filter((line) => line.trim().length > 0);
+  const hasBullets = lines.every((line) => /^[-*]\s+/.test(line.trim()));
+  if (hasBullets) {
+    return lines.join('\n');
+  }
+  return lines.map((line) => `- ${line.trim()}`).join('\n');
+};
+
+const getNextPatchVersion = (version) => {
+  const [major, minor, patch] = version.split('.').map((value) => Number.parseInt(value, 10));
+  return `${major}.${minor}.${patch + 1}`;
+};
+
+const updateChangelog = (targetVersion) => {
+  const changelogPath = path.join(ROOT, 'CHANGELOG.md');
+  const notesBody = normalizeNotesBody(fs.readFileSync(notesPath, 'utf8'));
+  const date = new Date().toISOString().slice(0, 10);
+  const section = `## [${options.version}] - ${date}\n\n${notesBody}\n`;
+  const unreleasedSection = `## [Unreleased]\nTarget: ${targetVersion}\n\n- Log all new changes here for the upcoming ${targetVersion} release.\n`;
+  let changelog = fs.existsSync(changelogPath)
+    ? fs.readFileSync(changelogPath, 'utf8')
+    : `# Changelog\n\nAll notable changes to this project are documented in this file.\n\n## [Unreleased]\n\n`;
+
+  if (changelog.includes(`## [${options.version}]`)) {
+    return;
+  }
+
+  if (changelog.includes('## [Unreleased]')) {
+    changelog = changelog.replace(
+      /## \[Unreleased\][\s\S]*?(?=\n## \[|$)/,
+      `${unreleasedSection}\n${section}`
+    );
+  } else {
+    changelog = `${changelog.trimEnd()}\n\n${unreleasedSection}\n${section}`;
+  }
+
+  if (!options.dryRun) {
+    fs.writeFileSync(changelogPath, changelog, 'utf8');
+  }
+};
+
+const ensureNextReleaseNotes = (targetVersion) => {
+  const targetPath = path.join(ROOT, 'release-notes', `${targetVersion}.md`);
+  if (fs.existsSync(targetPath)) {
+    return;
+  }
+  const template =
+    '- Add change notes for this release as they are implemented.\n- Keep entries concise and user-facing.\n';
+  if (!options.dryRun) {
+    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+    fs.writeFileSync(targetPath, template, 'utf8');
+  }
+};
+
+const hashFile = (relativePath) => {
+  const filePath = path.join(ROOT, relativePath);
+  if (!fs.existsSync(filePath)) {
+    return null;
+  }
+  const digest = crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');
+  return `${digest}  ${relativePath}`;
+};
+
+const releaseArtifactExtensions = [
+  '.AppImage',
+  '.deb',
+  '.dmg',
+  '.exe',
+  '.pkg',
+  '.rpm',
+  '.tar.gz',
+  '.tar.xz',
+  '.zip'
+];
+
+const getBuiltReleaseArtifacts = () => {
+  const releaseDir = path.join(ROOT, 'release');
+  if (!fs.existsSync(releaseDir)) {
+    return [];
+  }
+  return fs
+    .readdirSync(releaseDir)
+    .filter((fileName) => {
+      if (!fileName.startsWith(`videodeck_${options.version}_`)) {
+        return false;
+      }
+      if (fileName.endsWith('.blockmap')) {
+        return false;
+      }
+      return releaseArtifactExtensions.some((extension) => fileName.endsWith(extension));
+    })
+    .sort()
+    .map((fileName) => `release/${fileName}`);
+};
+
+const writeChecksums = () => {
+  const candidates = getBuiltReleaseArtifacts();
+  const hashes = candidates.map(hashFile).filter(Boolean);
+  if (!hashes.length) {
+    return;
+  }
+  if (!options.dryRun) {
+    fs.writeFileSync(
+      path.join(ROOT, 'release', `SHA256SUMS-${options.version}.txt`),
+      `${hashes.join('\n')}\n`,
+      'utf8'
+    );
+  }
+};
+
+const buildReleaseArtifacts = () => {
+  run('npm', ['run', 'build:renderer']);
+  run('npm', ['run', 'build:main']);
+
+  // better-sqlite3 is compiled per platform, so only the host platform can be
+  // packaged locally. The Release workflow covers the rest of the matrix.
+  if (process.platform === 'darwin') {
+    run('npx', ['electron-builder', '--mac', '--x64', '--arm64', '--publish', 'never']);
+    return;
+  }
+
+  if (process.platform === 'win32') {
+    run('npx', ['electron-builder', '--win', '--x64', '--publish', 'never']);
+    return;
+  }
+
+  if (process.platform === 'linux') {
+    run('npx', ['electron-builder', '--linux', '--x64', '--publish', 'never']);
+    return;
+  }
+
+  throw new Error(`Unsupported release build host platform: ${process.platform}`);
+};
+
+const syncVersionStrings = () => {
+  const releaseDate = new Date().toISOString().slice(0, 10);
+  const upsertYamlScalar = (content, field, value) => {
+    const pattern = new RegExp(`^${field}:\\s*.*$`, 'm');
+    if (pattern.test(content)) {
+      return content.replace(pattern, `${field}: ${value}`);
+    }
+    return `${content.trimEnd()}\n${field}: ${value}\n`;
+  };
+
+  replaceInFile('package.json', (content) =>
+    content
+      .replace(/"buildDate":\s*"[^"]*"/, `"buildDate": "${releaseDate}"`)
+      .replace(
+        /"description":\s*"VideoDeck - multi-camera RTSP\/ONVIF live view and recording manager \(v[^"]*\)"/,
+        `"description": "VideoDeck - multi-camera RTSP/ONVIF live view and recording manager (v${options.version})"`
+      )
+  );
+  replaceInFile('README.md', (content) =>
+    content.replace(/^# VideoDeck \(v[^\)]+\)/m, `# VideoDeck (v${options.version})`)
+  );
+  if (fs.existsSync(path.join(ROOT, 'CITATION.cff'))) {
+    replaceInFile('CITATION.cff', (content) =>
+      upsertYamlScalar(
+        upsertYamlScalar(content, 'version', options.version),
+        'date-released',
+        releaseDate
+      )
+    );
+  }
+};
+
+const main = () => {
+  const nextPatchVersion = getNextPatchVersion(options.version);
+  // --allow-same-version so re-running for the version already in
+  // package.json (notably the very first release) is not an error.
+  run('npm', ['version', options.version, '--no-git-tag-version', '--allow-same-version']);
+  run('npm', ['install', '--package-lock-only']);
+  syncVersionStrings();
+  updateChangelog(nextPatchVersion);
+  ensureNextReleaseNotes(nextPatchVersion);
+
+  if (!options.skipLint) {
+    run('npm', ['run', 'lint']);
+  }
+
+  if (!options.skipBuild) {
+    buildReleaseArtifacts();
+    writeChecksums();
+  }
+
+  console.log('\nRelease preparation finished.');
+  console.log(`Version: ${options.version}`);
+  console.log(`Notes: ${path.relative(ROOT, notesPath)}`);
+  console.log(`Next target: ${nextPatchVersion}`);
+  if (!options.skipBuild) {
+    console.log(`Checksums: release/SHA256SUMS-${options.version}.txt`);
+  }
+};
+
+main();

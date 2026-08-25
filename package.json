@@ -1,0 +1,106 @@
+{
+  "name": "videodeck",
+  "version": "0.1.0",
+  "buildDate": "2026-08-25",
+  "description": "VideoDeck - multi-camera RTSP/ONVIF live view and recording manager (v0.1.0)",
+  "author": "Antton Alberdi",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alberdilab/videodeck.git"
+  },
+  "bugs": {
+    "url": "https://github.com/alberdilab/videodeck/issues"
+  },
+  "homepage": "https://github.com/alberdilab/videodeck#readme",
+  "private": true,
+  "type": "commonjs",
+  "main": "dist/main/main.js",
+  "scripts": {
+    "dev": "npm run build:main && concurrently -k \"npm:dev:main\" \"npm:dev:renderer\" \"npm:dev:electron\"",
+    "dev:main": "tsc -p tsconfig.main.json --watch --preserveWatchOutput",
+    "dev:renderer": "vite --host 127.0.0.1",
+    "dev:electron": "wait-on tcp:5173 && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 node scripts/launch-electron.cjs",
+    "build": "npm run typecheck && npm run build:renderer && npm run build:main",
+    "build:renderer": "vite build",
+    "build:main": "tsc -p tsconfig.main.json",
+    "build:desktop": "npm run build:renderer && npm run build:main && electron-builder",
+    "build:mac": "npm run build:renderer && npm run build:main && electron-builder --mac --x64 --arm64",
+    "build:win": "npm run build:win:x64",
+    "build:win:x64": "npm run build:renderer && npm run build:main && electron-builder --win --x64",
+    "build:linux": "npm run build:renderer && npm run build:main && electron-builder --linux --x64",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.main.json",
+    "lint": "npm run typecheck",
+    "rebuild:native": "node scripts/rebuild-native.cjs",
+    "postinstall": "node scripts/rebuild-native.cjs",
+    "release:build": "node scripts/release-build.js",
+    "start": "node scripts/launch-electron.cjs"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.9.1",
+    "lucide-react": "^0.475.0",
+    "md5": "^2.3.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "uuid": "^11.0.5",
+    "zod": "^3.24.2",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/md5": "^2.3.6",
+    "@types/node": "^22.13.5",
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
+    "@vitejs/plugin-react": "^5.0.0",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^35.0.0",
+    "electron-builder": "^26.7.0",
+    "typescript": "^5.7.3",
+    "vite": "^6.1.1",
+    "wait-on": "^8.0.2"
+  },
+  "build": {
+    "appId": "com.videodeck.app",
+    "productName": "VideoDeck",
+    "artifactName": "videodeck_${version}_${arch}_${os}.${ext}",
+    "directories": {
+      "buildResources": "build",
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "**/node_modules/better-sqlite3/**"
+    ],
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ]
+    },
+    "nsis": {
+      "buildUniversalInstaller": false
+    },
+    "linux": {
+      "maintainer": "Antton Alberdi <antton.alberdi@sund.ku.dk>",
+      "category": "AudioVideo",
+      "synopsis": "Multi-camera RTSP/ONVIF live view and recording manager",
+      "target": [
+        "AppImage",
+        "deb",
+        "rpm",
+        "tar.gz"
+      ]
+    }
+  }
+}

@@ -1,0 +1,97 @@
+name: Archive to Zenodo
+
+# Archive an already-published GitHub release to Zenodo without rebuilding.
+# Useful to retry the Zenodo step if it failed during the Release workflow.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version to archive, without the leading v (e.g. 0.1.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  archive:
+    name: Archive ${{ inputs.version }} to Zenodo
+    runs-on: ubuntu-latest
+    env:
+      ZENODO_TOKEN: ${{ secrets.ZENODO_TOKEN }}
+
+    steps:
+      - name: Fail if no Zenodo token
+        if: ${{ env.ZENODO_TOKEN == '' }}
+        run: |
+          echo "ZENODO_TOKEN secret is not set." >&2
+          exit 1
+
+      # Check out the default branch (latest archive script) but keep full
+      # history + tags so the source archive can be built from the release tag.
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Download release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${{ inputs.version }}"
+          mkdir -p zenodo-upload
+          gh release download "v${version}" \
+            --repo "${{ github.repository }}" \
+            --dir zenodo-upload \
+            --pattern 'videodeck_*' \
+            --pattern 'SHA256SUMS-*'
+          # Source archive of the tagged release commit.
+          git archive --format=zip --prefix="videodeck-${version}/" \
+            -o "zenodo-upload/videodeck_${version}_source.zip" "v${version}"
+          ls -lh zenodo-upload
+
+      - name: Archive release to Zenodo
+        id: zenodo
+        env:
+          ZENODO_CONCEPT_RECID: ${{ vars.ZENODO_CONCEPT_RECID }}
+          ZENODO_BASE: ${{ vars.ZENODO_BASE }}
+        run: node scripts/zenodo-publish.js --dir zenodo-upload
+
+      - name: Update README download links on main
+        if: ${{ steps.zenodo.outputs.version_recid != '' }}
+        continue-on-error: true
+        env:
+          ZENODO_BASE: ${{ vars.ZENODO_BASE }}
+          RECID: ${{ steps.zenodo.outputs.version_recid }}
+        shell: bash
+        run: |
+          version="${{ inputs.version }}"
+          git config user.name "anttonalberdi"
+          git config user.email "anttonalberdi@users.noreply.github.com"
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git reset --hard origin/main
+            if ! node scripts/update-readme-downloads.js --recid "$RECID" --version "$version"; then
+              echo "README generator failed (non-fatal)."
+              exit 0
+            fi
+            if git diff --quiet -- README.md; then
+              echo "README download section already current."
+              exit 0
+            fi
+            git add README.md
+            git commit -m "Update README download links for ${version}"
+            if git push origin HEAD:main; then
+              echo "README updated for ${version}."
+              exit 0
+            fi
+            echo "Push raced or failed (attempt ${attempt}); retrying."
+            sleep 5
+          done
+          echo "Could not push README update after retries (non-fatal)."
