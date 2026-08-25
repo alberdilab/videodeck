@@ -1,7 +1,7 @@
 # Release with Zenodo
 
 Use this checklist when publishing a VideoDeck release that should include
-source code, built desktop artifacts, checksums, and a citable archive.
+built desktop artifacts, checksums, and a citable archive.
 
 ## 0. One-time setup
 
@@ -67,9 +67,13 @@ release asset set.
 ## 3. Archive on Zenodo
 
 This happens automatically at the end of the `Release` workflow: the built
-installers, the checksum file, and a `videodeck_<version>_source.zip` archive of
-the tagged commit are uploaded to Zenodo, metadata is taken from `.zenodo.json`,
-and the deposition is published.
+installers and the checksum file are uploaded to Zenodo, metadata is taken from
+`.zenodo.json`, and the deposition is published.
+
+Only binaries are archived. The source code is distributed through GitHub and
+the Zenodo description points at the repository, so a release archive stays a
+record of the exact artifacts users downloaded. To archive the source as well,
+add a `git archive` step to the staging steps of both workflows.
 
 If that step fails, or you want to archive an existing release afterwards, run
 the `Archive to Zenodo` workflow manually with the version number. It downloads

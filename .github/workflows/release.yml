@@ -107,7 +107,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           # Full history so the README auto-update can push to main reliably
-          # (avoids shallow-push rejections) and git archive sees the tag.
+          # (avoids shallow-push rejections).
           fetch-depth: 0
 
       - name: Set up Node.js
@@ -159,7 +159,7 @@ jobs:
               --notes-file "$notes"
           fi
 
-      - name: Stage files for Zenodo (binaries + source)
+      - name: Stage files for Zenodo (binaries)
         if: ${{ env.ZENODO_TOKEN != '' }}
         env:
           RELEASE_VERSION: ${{ github.event.inputs.version || github.ref_name }}
@@ -170,9 +170,7 @@ jobs:
           # Built installers + checksums.
           cp release-assets/videodeck_* "zenodo-upload/"
           cp "release-assets/SHA256SUMS-${version}.txt" "zenodo-upload/" || true
-          # Source archive of the tagged commit.
-          git archive --format=zip --prefix="videodeck-${version}/" \
-            -o "zenodo-upload/videodeck_${version}_source.zip" HEAD
+          # Binaries only: the source is distributed through GitHub, not Zenodo.
 
       - name: Archive release to Zenodo
         id: zenodo

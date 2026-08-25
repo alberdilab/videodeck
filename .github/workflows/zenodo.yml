@@ -51,9 +51,6 @@ jobs:
             --dir zenodo-upload \
             --pattern 'videodeck_*' \
             --pattern 'SHA256SUMS-*'
-          # Source archive of the tagged release commit.
-          git archive --format=zip --prefix="videodeck-${version}/" \
-            -o "zenodo-upload/videodeck_${version}_source.zip" "v${version}"
           ls -lh zenodo-upload
 
       - name: Archive release to Zenodo

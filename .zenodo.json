@@ -3,7 +3,7 @@
   "upload_type": "software",
   "access_right": "open",
   "license": "MIT",
-  "description": "VideoDeck is an open-source desktop application for managing local ONVIF/RTSP IP cameras, providing a live-view grid, manual and fixed-duration recordings, interval snapshots, recurrence-based schedules, and locally stored recording metadata. This record archives the released application binaries (macOS, Windows, Linux) together with the source code for the tagged release. Source and issues: https://github.com/alberdilab/videodeck",
+  "description": "VideoDeck is an open-source desktop application for managing local ONVIF/RTSP IP cameras, providing a live-view grid, manual and fixed-duration recordings, interval snapshots, recurrence-based schedules, and locally stored recording metadata. This record archives the released application binaries for macOS, Windows and Linux, together with their SHA-256 checksums. The source code for the tagged release is available on GitHub: https://github.com/alberdilab/videodeck",
   "creators": [
     {
       "name": "Alberdi, Antton",
