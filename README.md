@@ -1,5 +1,6 @@
 # VideoDeck (v0.1.0)
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22091744.svg)](https://doi.org/10.5281/zenodo.22091744)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 VideoDeck is an Electron desktop application for managing local ONVIF/RTSP IP cameras, live-view grid placeholders, manual recordings, fixed-duration clips, schedules, and recording metadata.

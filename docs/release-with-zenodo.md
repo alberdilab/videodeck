@@ -10,7 +10,7 @@ Set these on the GitHub repository before the first release:
 | Kind | Name | Value |
 | --- | --- | --- |
 | Secret | `ZENODO_TOKEN` | Zenodo personal access token with `deposit:write` and `deposit:actions` scopes. |
-| Variable | `ZENODO_CONCEPT_RECID` | Left unset for the first release. See step 4. |
+| Variable | `ZENODO_CONCEPT_RECID` | `22091744`, the concept record created by the 0.1.0 release. |
 | Variable | `ZENODO_BASE` | Optional. Set to `https://sandbox.zenodo.org` to rehearse against the sandbox. |
 
 Without `ZENODO_TOKEN` the Release workflow still builds and publishes the
